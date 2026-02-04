@@ -2,85 +2,61 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>ESP32 Monitor</title>
+<title>ESP32 Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body{
-  font-family: Arial;
-  background: #111;
-  color: white;
-  text-align: center;
-}
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>ESP32 Monitor</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<style>
 body{
   margin:0;
-  background:#111;
+  font-family:Arial, sans-serif;
+  background:#0f172a;
   color:white;
-  font-family:Arial;
 }
 
-h1{
+/* ===== Header ===== */
+.header{
   text-align:center;
+  padding:15px;
+  font-size:24px;
+  font-weight:bold;
+}
+
+.clock{
+  text-align:center;
+  color:#38bdf8;
+  margin-bottom:15px;
+}
+
+/* ===== Card แสดงค่า ===== */
+.container{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:15px;
   padding:10px;
 }
 
-/* ทำให้กราฟเต็มจอ */
-#chart-container{
-  width:100vw;
-  height:90vh;
-}
-
-canvas{
-  width:100% !important;
-  height:100% !important;
-}
-</style>
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>ESP32 IoT Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-
-body{
-  margin:0;
-  background:#0d1117;
-  color:white;
-  font-family:Arial;
-}
-
-h1{
+.card{
+  background:#1e293b;
+  border-radius:15px;
+  padding:20px;
+  width:200px;
   text-align:center;
+  box-shadow:0 0 10px rgba(0,0,0,0.4);
+}
+
+.value{
+  font-size:36px;
+  font-weight:bold;
   margin-top:10px;
 }
 
-#data-box{
-  display:flex;
-  justify-content:center;
-  gap:40px;
-  font-size:24px;
-  margin-bottom:10px;
-}
-
-.card{
-  background:#161b22;
-  padding:15px 25px;
-  border-radius:10px;
-}
-
-#chart-container{
-  width:100vw;
-  height:75vh;
+/* ===== กราฟ ===== */
+.chart-box{
+  width:95%;
+  height:55vh;
+  margin:auto;
 }
 
 canvas{
@@ -93,14 +69,24 @@ canvas{
 
 <body>
 
-<h1>ESP32 Sensor Dashboard</h1>
+<div class="header">ESP32 Sensor Dashboard</div>
+<div class="clock" id="clock"></div>
 
-<div id="data-box">
-  <div class="card">🌡 Temp : <span id="tempNow">--</span> °C</div>
-  <div class="card">💧 Hum : <span id="humNow">--</span> %</div>
+<div class="container">
+
+  <div class="card">
+    🌡 Temperature
+    <div class="value" id="tempNow">--</div>
+  </div>
+
+  <div class="card">
+    💧 Humidity
+    <div class="value" id="humNow">--</div>
+  </div>
+
 </div>
 
-<div id="chart-container">
+<div class="chart-box">
   <canvas id="chart"></canvas>
 </div>
 
@@ -110,6 +96,16 @@ const csvUrl = "https://docs.google.com/spreadsheets/d/1is4HVAGQwXNXCZynw3pWGqbM
 
 let chart;
 
+/* ===== นาฬิกา ===== */
+function updateClock(){
+  let now = new Date();
+  document.getElementById("clock").innerText =
+    now.toLocaleString("th-TH");
+}
+setInterval(updateClock,1000);
+updateClock();
+
+/* ===== โหลดข้อมูล ===== */
 async function loadData(){
 
   const res = await fetch(csvUrl);
@@ -127,19 +123,16 @@ async function loadData(){
     if(col[0] && col[1] && col[2]){
 
       let t = new Date(col[0]);
+      let label = t.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
 
-      // แสดงเวลาแบบ HH:MM
-      let timeLabel = t.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-
-      time.push(timeLabel);
+      time.push(label);
       temp.push(parseFloat(col[1]));
       hum.push(parseFloat(col[2]));
     }
   });
 
-  // แสดงค่าปัจจุบัน
-  document.getElementById("tempNow").innerText = temp[temp.length-1];
-  document.getElementById("humNow").innerText = hum[hum.length-1];
+  document.getElementById("tempNow").innerText = temp[temp.length-1] + " °C";
+  document.getElementById("humNow").innerText = hum[hum.length-1] + " %";
 
   drawChart(time,temp,hum);
 }
@@ -149,58 +142,36 @@ function drawChart(time,temp,hum){
   if(chart) chart.destroy();
 
   chart = new Chart(document.getElementById("chart"),{
-
     type:"line",
-
     data:{
       labels:time,
       datasets:[
         {
-          label:"Temperature °C",
+          label:"Temperature",
           data:temp,
-          borderWidth:2,
-          tension:0.3
+          borderWidth:3,
+          tension:0.4
         },
         {
-          label:"Humidity %",
+          label:"Humidity",
           data:hum,
-          borderWidth:2,
-          tension:0.3
+          borderWidth:3,
+          tension:0.4
         }
       ]
     },
-
     options:{
       responsive:true,
       maintainAspectRatio:false,
-
-      scales:{
-        x:{
-          ticks:{
-            maxRotation:45,
-            minRotation:45,
-            maxTicksLimit:12,
-            color:"white"
-          }
-        },
-        y:{
-          ticks:{
-            color:"white"
-          }
-        }
-      },
-
       plugins:{
-        legend:{
-          labels:{
-            color:"white"
-          }
-        }
+        legend:{ labels:{ color:"white" } }
+      },
+      scales:{
+        x:{ ticks:{ color:"white" } },
+        y:{ ticks:{ color:"white" } }
       }
     }
-
   });
-
 }
 
 loadData();
